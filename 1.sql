@@ -29,7 +29,7 @@ SELECT list_reduce(
        FROM c_lists
 )
 
-SELECT count(*) FROM positions WHERE end_pos = 0 AS password;
+SELECT count(*) AS password FROM positions WHERE end_pos = 0;
 
 
 -- Part 2
