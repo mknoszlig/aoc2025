@@ -17,7 +17,7 @@ CREATE OR REPLACE TABLE data_in AS (
 		str_split(value, '-')[2]::long AS i_end
   	 FROM flipped
   )
-  SELECT unnest(generate_series(i_start, i_end)) AS pid
+  SELECT unnest(generate_series(i_start, i_end))::string AS pid
   FROM parsed
 );
 	 
@@ -32,17 +32,17 @@ CREATE OR REPLACE MACRO is_repetitive(s, l) AS (
 CREATE OR REPLACE TABLE matches AS (
 SELECT
 	pid,
-	is_repetitive(pid::string, 1) AS r_1,
-	is_repetitive(pid::string, 2) AS r_2,
-	is_repetitive(pid::string, 3) AS r_3,
-	is_repetitive(pid::string, 4) AS r_4,
-	is_repetitive(pid::string, 5) AS r_5
+	is_repetitive(pid, 1) AS r_1,
+	is_repetitive(pid, 2) AS r_2,
+	is_repetitive(pid, 3) AS r_3,
+	is_repetitive(pid, 4) AS r_4,
+	is_repetitive(pid, 5) AS r_5
  FROM data_in
 WHERE
 r_1 OR r_2 OR r_3 OR r_4 OR r_5
 );
 
-SELECT SUM(pid) AS result FROM matches;
+SELECT SUM(pid::long) AS result FROM matches;
 
 
 -- part 2
@@ -59,17 +59,17 @@ CREATE OR REPLACE MACRO is_more_repetitive(s, l) AS (
 CREATE OR REPLACE TABLE matches_p2 AS (
 SELECT
 	pid,
-	is_more_repetitive(pid::string, 1) AS r_1,
-	is_more_repetitive(pid::string, 2) AS r_2,
-	is_more_repetitive(pid::string, 3) AS r_3,
-	is_more_repetitive(pid::string, 4) AS r_4,
-	is_more_repetitive(pid::string, 5) AS r_5
+	is_more_repetitive(pid, 1) AS r_1,
+	is_more_repetitive(pid, 2) AS r_2,
+	is_more_repetitive(pid, 3) AS r_3,
+	is_more_repetitive(pid, 4) AS r_4,
+	is_more_repetitive(pid, 5) AS r_5
 FROM data_in
 WHERE
 r_1 OR r_2 OR r_3 OR r_4 OR r_5
 );
 
-SELECT SUM(pid) AS result FROM matches_p2;
+SELECT SUM(pid::long) AS result FROM matches_p2;
 
 
 -- Bonus: don't make assumptions about the pattern lengths
@@ -77,7 +77,7 @@ SELECT SUM(pid) AS result FROM matches_p2;
 
 CREATE OR REPLACE TABLE pattern_lengths AS (
   WITH max_len AS (
-    SELECT max(len(pid::string)) as l FROM data_in
+    SELECT max(len(pid)) as l FROM data_in
   ),
   series AS (
     -- we already know we're not interested in patterns that are longer
@@ -92,7 +92,7 @@ CREATE OR REPLACE TABLE dynamic_matches_p2 AS (
     SELECT
       pid,
       CASE -- we reuse the predicate to check for repetitions
-      WHEN (is_more_repetitive(pid::string, i))
+      WHEN (is_more_repetitive(pid, i))
       THEN i
       ELSE NULL
       END AS matches
@@ -111,4 +111,4 @@ CREATE OR REPLACE TABLE dynamic_matches_p2 AS (
   GROUP BY pid
 );
 
-SELECT sum(pid) AS result FROM dynamic_matches_p2;
+SELECT sum(pid::long) AS result FROM dynamic_matches_p2;
