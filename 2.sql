@@ -70,3 +70,45 @@ r_1 OR r_2 OR r_3 OR r_4 OR r_5
 );
 
 SELECT SUM(pid) AS result FROM matches_p2;
+
+
+-- Bonus: don't make assumptions about the pattern lengths
+-- that can occur but deduce them from the data
+
+CREATE OR REPLACE TABLE pattern_lengths AS (
+  WITH max_len AS (
+    SELECT max(len(pid::string)) as l FROM data_in
+  ),
+  series AS (
+    -- we already know we're not interested in patterns that are longer
+    -- than half of the max string length
+    SELECT generate_series(1, l // 2) AS i FROM max_len
+  )
+  SELECT UNNEST(i) AS i FROM series
+);
+
+CREATE OR REPLACE TABLE dynamic_matches_p2 AS (
+  WITH matched AS (
+    SELECT
+      pid,
+      CASE -- we reuse the predicate to check for repetitions
+      WHEN (is_more_repetitive(pid::string, i))
+      THEN i
+      ELSE NULL
+      END AS matches
+    FROM
+      data_in,
+      pattern_lengths
+    WHERE
+      matches IS NOT NULL -- drop results that don't match
+  )
+  SELECT
+    pid,
+    -- keep a list of matching pattern lenghts, not necessary
+    -- but possibly useful for debugging,
+    list(matches) AS matches
+  FROM matched
+  GROUP BY pid
+);
+
+SELECT sum(pid) AS result FROM dynamic_matches_p2;
