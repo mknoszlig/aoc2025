@@ -40,7 +40,7 @@ indexed AS (
 ),
 pairs AS (
       SELECT
-	CONCAT(i1.bank, i2.bank) AS banks,
+	MAX(CONCAT(i1.bank, i2.bank)) AS banks,
 	i1.l AS l,
 	i2.r AS r
       FROM
@@ -48,6 +48,7 @@ pairs AS (
 	indexed AS i2
       WHERE
 	i2.r > i1.l
+      GROUP BY i1.l, i2.r
 ),
 quads AS (
       SELECT
@@ -83,21 +84,67 @@ SELECT
 );
 
 
-CREATE OR REPLACE TEMP TABLE joltages1 AS (
-       with sub1 as (select * from data_in limit 100)
-       select max_joltage(batteries) from sub1
+--
+-- simply applying the macro in one go on the whole table OOMs for me,
+-- unless i set threads to something low, in wich case it's slower (3 min vs 1 min)
+--
+-- This is sort of a compromise which looks pretty ugly. This could of course be driven
+-- by a python script does this in a loop.
+
+CREATE OR REPLACE TABLE joltages
+(joltage LONG);
+
+
+ INSERT INTO joltages (
+       WITH sub AS (SELECT * FROM data_in LIMIT 20)
+       SELECT max_joltage(batteries) AS joltage FROM sub
  );
 
-CREATE OR REPLACE TEMP TABLE joltages2 AS (
-      with sub2 as (select * from data_in limit 100 offset 100)
-      select max_joltage(batteries) from sub2
+INSERT INTO joltages (
+      WITH sub AS (SELECT * FROM data_in LIMIT 20 offset 20)
+      SELECT max_joltage(batteries) AS joltage FROM sub
+);
+
+INSERT INTO joltages (
+      WITH sub AS (SELECT * FROM data_in LIMIT 20 offset 40)
+      SELECT max_joltage(batteries) AS joltage FROM sub
+);
+
+INSERT INTO joltages (
+      WITH sub AS (SELECT * FROM data_in LIMIT 20 offset 60)
+      SELECT max_joltage(batteries) AS joltage FROM sub
+);
+
+INSERT INTO joltages (
+      WITH sub AS (SELECT * FROM data_in LIMIT 20 offset 80)
+      SELECT max_joltage(batteries) AS joltage FROM sub
+);
+
+INSERT INTO joltages (
+      WITH sub AS (SELECT * FROM data_in LIMIT 20 offset 100)
+      SELECT max_joltage(batteries) AS joltage FROM sub
+);
+
+INSERT INTO joltages (
+      WITH sub AS (SELECT * FROM data_in LIMIT 20 offset 120)
+      SELECT max_joltage(batteries) AS joltage FROM sub
+);
+
+INSERT INTO joltages (
+      WITH sub AS (SELECT * FROM data_in LIMIT 20 offset 140)
+      SELECT max_joltage(batteries) AS joltage FROM sub
 );
 
 
-CREATE OR REPLACE TABLE joltages AS (
-(select "max_joltage(batteries)" as joltage FROM joltages1)
-UNION ALL
-(select "max_joltage(batteries)" as joltage fROM joltages2)
+INSERT INTO joltages (
+      WITH sub AS (SELECT * FROM data_in LIMIT 20 offset 160)
+      SELECT max_joltage(batteries) AS joltage FROM sub
+);
+
+INSERT INTO joltages (
+      WITH sub AS (SELECT * FROM data_in LIMIT 20 offset 180)
+      SELECT max_joltage(batteries) AS joltage FROM sub
 );
 
 select sum(joltage) FROM joltages;
+
