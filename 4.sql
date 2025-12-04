@@ -74,6 +74,8 @@ ORDER BY
       x, y
 );
 
+SELECT count(*) AS result FROM solutions;
+
 
 -- Visualization of identified spots for debugging
 CREATE OR REPLACE TABLE viz AS (
@@ -99,10 +101,6 @@ COPY viz TO '4_debug.csv';
 
 -- We're setting up some table that we will update with the removed paper rolls
 CREATE OR REPLACE TABLE iterable AS (SELECT * FROM data_in);
-
--- This table stores how many rolls were removed in each iteration
-CREATE OR REPLACE TABLE removed
-(removed INTEGER);
 
 -- This is more or less solutions from above, but based on `iterable`
 -- The complete part below can be repeatedly called until nothing more
@@ -146,13 +144,8 @@ ORDER BY
       x, y
 );
 
--- add our result
-INSERT INTO removed
-(select count(*) FROM removable);
-
--- show the result so we know when to stop :)
-SELECT * FROM removed;
-
+-- check if we need to continue
+select count(*) FROM removable;
 
 -- update the iterable table to account for the removed paper rolls
 MERGE INTO iterable
@@ -161,3 +154,19 @@ MERGE INTO iterable
       )
       USING (x,y)
       WHEN MATCHED THEN update SET content = '.';
+
+
+-- After all removable paper rolls are gone, just count how many
+-- were removed
+
+SELECT
+	count(*) AS result,
+FROM
+	data_in
+LEFT JOIN
+	iterable
+ON
+data_in.x = iterable.x AND data_in.y = iterable.y
+WHERE
+data_in.content = '@' and iterable.content = '.'
+;
